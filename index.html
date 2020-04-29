@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>U.S. Covid-19 Deaths</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: whitesmoke;
+            font-family: Lato, sans-serif;
+            color: #0D0000;
+        }
+        header {
+            padding: 6px 10%;
+        }
+        h1 {
+            display: inline-block;
+            margin-right: 20px;
+            color: #001323;
+        }
+        h2 {
+            display: inline-block;
+            color: #001323;
+        }
+        #map {
+            width: 80%;
+            height: 540px;
+            margin: 10px auto;
+        }
+        footer {
+            padding: 6px 10%;
+            width: 80%;
+        }
+        p {
+            font-size: 1em;
+            color: #001323;
+        }
+        .legend {
+            padding: 6px 8px;
+            font: 14px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            line-height: 24px;
+            color: #555;
+        }
+        .legend h4 {
+            text-align: center;
+            font-size: 16px;
+            margin: 2px 12px 8px;
+            color: #777;
+        }
+
+        .legend span {
+            position: relative;
+            bottom: 3px;
+        }
+
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin: 0 8px 0 0;
+            opacity: 0.7;
+        }
+
+        .legend i.icon {
+            background-size: 18px;
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Deaths in the United States from Covid-19</h1>
+        <h2>Data as of 2020-04-28</h2>
+    </header>
+
+    <div id='map'></div>
+
+    <footer>
+        <p>Map authored by MAX SCHMADER</p>
+        <p>This chloropleth map shows physical representation of deaths from Covid-19 in each state of the United States. Data was used from the United States Center for Disease Control and Prevention Website.</p>
+    </footer>
+
+    <script src="casesData.geojson"></script>
+    <script>
+
+        
+var mapboxAccessToken = "pk.eyJ1IjoidHVmOTg3MzYiLCJhIjoiY2s5a3A4ZjExMDN0ODNlbDV4NXM0eTYxNiJ9.CPx-SE-BXzw4jZw6I_IH5A";
+var map = L.map('map').setView([37.8, -96], 4);
+
+        
+L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=' + 'pk.eyJ1IjoidHVmOTg3MzYiLCJhIjoiY2s5a3A4ZjExMDN0ODNlbDV4NXM0eTYxNiJ9.CPx-SE-BXzw4jZw6I_IH5A', {
+    id: 'mapbox/light-v9',
+    attribution: 0,
+    tileSize: 512,
+    zoomOffset: -1
+}).addTo(map);
+
+        
+L.geoJson(cases).addTo(map);
+          
+ 
+
+
+function getColor(d) {
+    return d > 10000 ? '#800026' :
+           d > 5000  ? '#BD0026' :
+           d > 1000  ? '#E31A1C' :
+           d > 500  ? '#FC4E2A' :
+           d > 100   ? '#FD8D3C' :
+           d > 50   ? '#FEB24C' :
+           d > 25   ? '#FED976' :
+                      '#FFEDA0';
+};
+        
+        
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.US_covid_data_Deaths),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        dashArray: '3',
+        fillOpacity: 0.7
+    }
+};
+
+        
+function highlightFeature(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    })
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+};
+        
+
+function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+};
+        
+      
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+    });
+        
+    var name = feature.properties.NAME
+    var deathsPerState = feature.properties.US_covid_data_Deaths
+      
+                                                
+          
+    var tooltip = ("<b style='color:#B22222'</b>"+name+"</b><br>"
+         + "<b style=</b>Deaths: </b><br>" +deathsPerState+ " people" + "<br>")
+                layer.bindTooltip(tooltip)
+          
+          
+};
+
+   
+var geojson;
+
+geojson = L.geoJson(cases, {style: style, onEachFeature: onEachFeature }).addTo(map)   
+        
+                            
+var legend = L.control({position: 'bottomright'});
+
+        
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 25, 50, 100, 500, 1000, 5000, 10000],
+        labels = [];
+
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div
+};
+
+
+legend.addTo(map);                           
+                            
+
+        
+        
+       
+        
+          
+    </script>
+    
+</body>
+
+</html>
